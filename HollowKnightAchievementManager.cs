@@ -1,96 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Reflection;
-using InControl;
 using JetBrains.Annotations;
 using Modding;
-using Modding.Converters;
-using Modding.Menu.Config;
-using Newtonsoft.Json;
-using SFCore.Generics;
 using SFCore.Utils;
-using UnityEngine;
-using UnityEngine.UI;
-using UnityStandardAssets.ImageEffects;
 using UObject = UnityEngine.Object;
 using UScenes = UnityEngine.SceneManagement;
 using Satchel.BetterMenus;
+using UnityEngine;
 
 namespace HollowKnightAchievementManager;
-
-/*
- * CHARMED
- * ENCHANTED
- * BLESSED
- * PROTECTED
- * MASKED
- * SOULFUL
- * WORLDSOUL
- * FK_DEFEAT
- * DREAM_FK
- * HORNET_1
- * HORNET_2
- * SOUL_MASTER_DEFEAT
- * BROKEN_VESSEL
- * DREAM_BROKEN_VESSEL
- * DUNG_DEFENDER
- * MANTIS_LORDS
- * COLLECTOR
- * ZOTE
- * ATTUNEMENT
- * AWAKENING
- * ASCENSION
- * GRUBFRIEND
- * METAMORPHOSIS
- * NEGLECT
- * NAILSMITH_KILL
- * NAILSMITH_SPARE
- * QUIRREL_EPILOGUE
- * MOURNER
- * TRAITOR_LORD
- * STAG_STATION_HALF
- * STAG_STATION_ALL
- * TEACHER
- * WATCHER
- * BEAST
- * MAP
- * COLOSSEUM_1
- * COLOSSEUM_2
- * COLOSSEUM_3
- * ENDING_A
- * ENDING_B
- * ENDING_C
- * VOID
- * SPEEDRUN_1
- * SPEEDRUN_2
- * COMPLETION
- * SPEED_COMPLETION
- * STEELSOUL
- * STEELSOUL_COMPLETION
- * HUNTER_1
- * HUNTER_2
- * MR_MUSHROOM
- * DREAM_SOUL_MASTER_DEFEAT
- * WHITE_DEFENDER
- * GREY_PRINCE
- * GRIMM
- * NIGHTMARE_GRIMM
- * BANISHMENT
- * PANTHEON1
- * PANTHEON2
- * PANTHEON3
- * PANTHEON4
- * ENDINGD
- * COMPLETIONGG
- *
- * or get a list from GameManager.instance.achievementHandler.achievementsList
- *
- * title: {key}_TITLE
- * text: {key}_TEXT
- *
- * get value with Platform.Current.EncryptedSharedData.GetBool("{key}", false);
- * set value with Platform.Current.EncryptedSharedData.SetBool("{key}", value);
- */
 
 [UsedImplicitly]
 public class HollowKnightAchievementManager : Mod, ICustomMenuMod
@@ -113,7 +32,24 @@ public class HollowKnightAchievementManager : Mod, ICustomMenuMod
 
     private void SetAchievementUnlocked(string achievementKey, bool val)
     {
-        // todo: implement this
+        DesktopOnlineSubsystem onlineSubsystem = (Platform.Current as DesktopPlatform).GetAttr<DesktopPlatform, DesktopOnlineSubsystem>("onlineSubsystem");
+        if (onlineSubsystem != null)
+        {
+            if (onlineSubsystem is GameCoreOnlineSubsystem gameCore)
+            {
+                gameCore.SetAchievementStatus(achievementKey, val);
+            }
+            else if (onlineSubsystem is GOGGalaxyOnlineSubsystem gogGalaxy)
+            {
+                gogGalaxy.SetAchievementStatus(achievementKey, val);
+            }
+            else if (onlineSubsystem is SteamOnlineSubsystem steam)
+            {
+                steam.SetAchievementStatus(achievementKey, val);
+            }
+        }
+
+        Platform.Current.EncryptedSharedData.SetBool(achievementKey, val);
     }
 
     private bool GetAchievementUnlocked(string achievementKey)
@@ -143,5 +79,102 @@ public class HollowKnightAchievementManager : Mod, ICustomMenuMod
         MenuRef ??= PrepareMenu();
 
         return MenuRef.GetMenuScreen(modListMenu);
+    }
+}
+
+public static class GameCoreExtension
+{
+    // reimplementation of GameCoreOnlineSubsystem.PushAchievementUnlock
+    public static void SetAchievementStatus(this GameCoreOnlineSubsystem gameCore, string achievementKey, bool val)
+    {
+        AchievementIDMap achievementIdMap = gameCore.GetAttr<GameCoreOnlineSubsystem, AchievementIDMap>("achievementIdMap");
+        HashSet<int> awardedAchievements = gameCore.GetAttr<GameCoreOnlineSubsystem, HashSet<int>>("awardedAchievements");
+        XGamingRuntime.XUserHandle _userHandle = gameCore.GetAttr<GameCoreOnlineSubsystem, XGamingRuntime.XUserHandle>("_userHandle");
+        XGamingRuntime.XblContextHandle _xblContextHandle = gameCore.GetAttr<GameCoreOnlineSubsystem, XGamingRuntime.XblContextHandle>("_xblContextHandle");
+
+        MethodInfo succeededMethod = typeof(GameCoreOnlineSubsystem).GetMethod("Succeeded", BindingFlags.NonPublic | BindingFlags.Static);
+        bool returnValue;
+
+        int? serviceId = ((achievementIdMap != null) ? achievementIdMap.GetServiceIdForInternalId(achievementKey) : null);
+        if (serviceId == null || achievementIdMap == null)
+        {
+            return;
+        }
+        ulong num;
+        returnValue = (bool) succeededMethod.Invoke(null, new object[] { XGamingRuntime.SDK.XUserGetId(_userHandle, out num), "Get Xbox user ID" });
+        if (!returnValue)
+        {
+            return;
+        }
+        HashSet<int> currentAwardedAchievements = awardedAchievements;
+        if (currentAwardedAchievements.Contains(serviceId.Value))
+        {
+            return;
+        }
+        XGamingRuntime.SDK.XBL.XblAchievementsUpdateAchievementAsync(_xblContextHandle, num, serviceId.Value.ToString(), val ? 100U : 0U, delegate(int hresult)
+        {
+            returnValue = (bool) succeededMethod.Invoke(null, new object[] { hresult, "Unlock achievement" });
+            if (returnValue)
+            {
+                currentAwardedAchievements.Add(serviceId.Value);
+            }
+        });
+    }
+}
+
+public static class GogGalaxyExtension
+{
+    // reimplementation of GOGGalaxyOnlineSubsystem.PushAchievementUnlock
+    public static void SetAchievementStatus(this GOGGalaxyOnlineSubsystem gogGalaxy, string achievementKey, bool val)
+    {
+        object authorization = typeof(GOGGalaxyOnlineSubsystem).GetField("authorization", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(gogGalaxy);
+        bool isAuthorized = (bool) authorization.GetType().GetField("isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(authorization);
+        if (isAuthorized)
+        {
+            try
+            {
+                if (val)
+                {
+                    Galaxy.Api.GalaxyInstance.Stats().SetAchievement(achievementKey);
+                }
+                else
+                {
+                    Galaxy.Api.GalaxyInstance.Stats().ClearAchievement(achievementKey);
+                }
+                Galaxy.Api.GalaxyInstance.Stats().StoreStatsAndAchievements();
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
+    }
+}
+
+public static class SteamExtension
+{
+    // reimplementation of SteamOnlineSubsystem.PushAchievementUnlock
+    public static void SetAchievementStatus(this SteamOnlineSubsystem steam, string achievementKey, bool val)
+    {
+        if (steam.GetAttr<SteamOnlineSubsystem, bool>("didInitialize"))
+        {
+            try
+            {
+                if (val)
+                {
+                    Steamworks.SteamUserStats.SetAchievement(achievementKey);
+                }
+                else
+                {
+                    Steamworks.SteamUserStats.ClearAchievement(achievementKey);
+                }
+                Steamworks.SteamUserStats.StoreStats();
+                Debug.LogFormat("Pushing achievement {0} with value {1}", new object[] { achievementKey, val });
+            }
+            catch (Exception ex)
+            {
+                Debug.LogException(ex);
+            }
+        }
     }
 }

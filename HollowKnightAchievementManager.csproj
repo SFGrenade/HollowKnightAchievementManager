@@ -327,6 +327,9 @@
     <Reference Include="UnityEngine.XRModule">
       <HintPath>$(HollowKnightRefs)/UnityEngine.XRModule.dll</HintPath>
     </Reference>
+    <Reference Include="XGamingRuntime">
+      <HintPath>$(HollowKnightRefs)/XGamingRuntime.dll</HintPath>
+    </Reference>
     <Reference Include="Satchel">
       <HintPath>$(HollowKnightRefs)/Mods/Satchel/Satchel.dll</HintPath>
     </Reference>
