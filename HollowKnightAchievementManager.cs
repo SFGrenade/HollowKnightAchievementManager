@@ -64,8 +64,8 @@ public class HollowKnightAchievementManager : Mod, ICustomMenuMod
 
         foreach (Achievement achievement in GameManager.instance.achievementHandler.achievementsList.achievements)
         {
-            elements.Add(new HorizontalOption(achievement.localizedTitle,
-                achievement.localizedText,
+            elements.Add(new HorizontalOption(Language.Language.Get(achievement.localizedTitle, "Achievements"),
+                Language.Language.Get(achievement.localizedText, "Achievements"),
                 new[] { "Locked", "Unlocked" },
                 (option) => SetAchievementUnlocked(achievement.key, option == 1),
                 () => GetAchievementUnlocked(achievement.key) ? 1 : 0));
