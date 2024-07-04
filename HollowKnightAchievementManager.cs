@@ -100,20 +100,23 @@ public static class GameCoreExtension
         {
             return;
         }
+
         ulong num;
-        returnValue = (bool) succeededMethod.Invoke(null, new object[] { XGamingRuntime.SDK.XUserGetId(_userHandle, out num), "Get Xbox user ID" });
+        returnValue = (bool)succeededMethod.Invoke(null, new object[] { XGamingRuntime.SDK.XUserGetId(_userHandle, out num), "Get Xbox user ID" });
         if (!returnValue)
         {
             return;
         }
+
         HashSet<int> currentAwardedAchievements = awardedAchievements;
         if (currentAwardedAchievements.Contains(serviceId.Value))
         {
             return;
         }
+
         XGamingRuntime.SDK.XBL.XblAchievementsUpdateAchievementAsync(_xblContextHandle, num, serviceId.Value.ToString(), val ? 100U : 0U, delegate(int hresult)
         {
-            returnValue = (bool) succeededMethod.Invoke(null, new object[] { hresult, "Unlock achievement" });
+            returnValue = (bool)succeededMethod.Invoke(null, new object[] { hresult, "Unlock achievement" });
             if (returnValue)
             {
                 currentAwardedAchievements.Add(serviceId.Value);
@@ -128,7 +131,7 @@ public static class GogGalaxyExtension
     public static void SetAchievementStatus(this GOGGalaxyOnlineSubsystem gogGalaxy, string achievementKey, bool val)
     {
         object authorization = typeof(GOGGalaxyOnlineSubsystem).GetField("authorization", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(gogGalaxy);
-        bool isAuthorized = (bool) authorization.GetType().GetField("isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(authorization);
+        bool isAuthorized = (bool)authorization.GetType().GetField("isAuthorized", BindingFlags.NonPublic | BindingFlags.Instance).GetValue(authorization);
         if (isAuthorized)
         {
             try
@@ -141,6 +144,7 @@ public static class GogGalaxyExtension
                 {
                     Galaxy.Api.GalaxyInstance.Stats().ClearAchievement(achievementKey);
                 }
+
                 Galaxy.Api.GalaxyInstance.Stats().StoreStatsAndAchievements();
             }
             catch (Exception ex)
@@ -168,6 +172,7 @@ public static class SteamExtension
                 {
                     Steamworks.SteamUserStats.ClearAchievement(achievementKey);
                 }
+
                 Steamworks.SteamUserStats.StoreStats();
                 Debug.LogFormat("Pushing achievement {0} with value {1}", new object[] { achievementKey, val });
             }
