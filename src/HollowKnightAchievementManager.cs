@@ -60,6 +60,29 @@ public class HollowKnightAchievementManager : Mod, ICustomMenuMod
     public Menu PrepareMenu()
     {
         List<Element> elements = new List<Element>();
+
+        elements.Add(new TextPanel("Menu Themes"));
+
+        elements.Add(new HorizontalOption("Zote Menu Theme",
+            "The menu theme unlocked by beating the eternal ordeal",
+            new[] { "Locked", "Unlocked" },
+            (option) => Platform.Current.EncryptedSharedData.SetInt("eternalOrdealMenu", option),
+            () => Platform.Current.EncryptedSharedData.GetInt("eternalOrdealMenu", 0)));
+
+        elements.Add(new TextPanel("Game Modes"));
+
+        elements.Add(new HorizontalOption("Steel soul mode",
+            "The game mode unlocked by beating the game",
+            new[] { "Locked", "Unlocked" },
+            (option) => Platform.Current.EncryptedSharedData.SetInt("RecPermadeathMode", option),
+            () => Platform.Current.EncryptedSharedData.GetInt("RecPermadeathMode", 0)));
+
+        elements.Add(new HorizontalOption("Godseeker mode",
+            "The game mode unlocked by beating the first three pantheons",
+            new[] { "Locked", "Unlocked" },
+            (option) => Platform.Current.EncryptedSharedData.SetInt("RecBossRushMode", option),
+            () => Platform.Current.EncryptedSharedData.GetInt("RecBossRushMode", 0)));
+
         elements.Add(new TextPanel("Achievements"));
 
         foreach (Achievement achievement in GameManager.instance.achievementHandler.achievementsList.achievements)
