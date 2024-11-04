@@ -35,17 +35,17 @@ public class HollowKnightAchievementManager : Mod, ICustomMenuMod
         DesktopOnlineSubsystem onlineSubsystem = (Platform.Current as DesktopPlatform).GetAttr<DesktopPlatform, DesktopOnlineSubsystem>("onlineSubsystem");
         if (onlineSubsystem != null)
         {
-            if (onlineSubsystem is GameCoreOnlineSubsystem gameCore)
+            if (onlineSubsystem.GetType().FullName == "GameCoreOnlineSubsystem")
             {
-                gameCore.SetAchievementStatus(achievementKey, val);
+                TrySetGameCoreAchievement(onlineSubsystem, achievementKey, val);
             }
-            else if (onlineSubsystem is GOGGalaxyOnlineSubsystem gogGalaxy)
+            else if (onlineSubsystem.GetType().FullName == "GOGGalaxyOnlineSubsystem")
             {
-                gogGalaxy.SetAchievementStatus(achievementKey, val);
+                TrySetGOGGalaxyAchievement(onlineSubsystem, achievementKey, val);
             }
-            else if (onlineSubsystem is SteamOnlineSubsystem steam)
+            else if (onlineSubsystem.GetType().FullName == "SteamOnlineSubsystem")
             {
-                steam.SetAchievementStatus(achievementKey, val);
+                TrySetSteamAchievement(onlineSubsystem, achievementKey, val);
             }
         }
 
@@ -102,6 +102,33 @@ public class HollowKnightAchievementManager : Mod, ICustomMenuMod
         MenuRef ??= PrepareMenu();
 
         return MenuRef.GetMenuScreen(modListMenu);
+    }
+
+    private static void TrySetGameCoreAchievement(DesktopOnlineSubsystem onlineSubsystem, string achievementKey, bool val)
+    {
+        DoSetGameCoreAchievement(onlineSubsystem, achievementKey, val);
+    }
+    private static void DoSetGameCoreAchievement(DesktopOnlineSubsystem onlineSubsystem, string achievementKey, bool val)
+    {
+        (onlineSubsystem as GameCoreOnlineSubsystem).SetAchievementStatus(achievementKey, val);
+    }
+
+    private static void TrySetGOGGalaxyAchievement(DesktopOnlineSubsystem onlineSubsystem, string achievementKey, bool val)
+    {
+        DoSetGOGGalaxyAchievement(onlineSubsystem, achievementKey, val);
+    }
+    private static void DoSetGOGGalaxyAchievement(DesktopOnlineSubsystem onlineSubsystem, string achievementKey, bool val)
+    {
+        (onlineSubsystem as GOGGalaxyOnlineSubsystem).SetAchievementStatus(achievementKey, val);
+    }
+
+    private static void TrySetSteamAchievement(DesktopOnlineSubsystem onlineSubsystem, string achievementKey, bool val)
+    {
+        DoSetSteamAchievement(onlineSubsystem, achievementKey, val);
+    }
+    private static void DoSetSteamAchievement(DesktopOnlineSubsystem onlineSubsystem, string achievementKey, bool val)
+    {
+        (onlineSubsystem as SteamOnlineSubsystem).SetAchievementStatus(achievementKey, val);
     }
 }
 
